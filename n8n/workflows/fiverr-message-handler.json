@@ -1,0 +1,114 @@
+{
+  "name": "Fiverr Message Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fiverr-message",
+        "responseMode": "lastNode"
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300],
+      "webhookId": "fiverr-message-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.tenantId}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Validate Tenant",
+      "type": "n8n-nodes-base.if",
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:4000/api/conversations/message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "clientId",
+              "value": "={{$json.clientId}}"
+            },
+            {
+              "name": "platform",
+              "value": "fiverr"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.message}}"
+            },
+            {
+              "name": "autoReply",
+              "value": true
+            }
+          ]
+        }
+      },
+      "name": "Process with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 250]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:4000/api/automation/run",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "platform",
+              "value": "fiverr"
+            },
+            {
+              "name": "action",
+              "value": "send_reply"
+            },
+            {
+              "name": "config",
+              "value": "={\"conversationId\": \"{{$json.conversationId}}\", \"message\": \"{{$json.aiReply}}\"}"
+            }
+          ]
+        }
+      },
+      "name": "Send Reply via Automation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 250]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Validate Tenant", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Tenant": {
+      "main": [
+        [{ "node": "Process with AI", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Process with AI": {
+      "main": [
+        [{ "node": "Send Reply via Automation", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

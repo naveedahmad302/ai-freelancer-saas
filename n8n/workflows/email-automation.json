@@ -1,0 +1,113 @@
+{
+  "name": "Email Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email-received",
+        "responseMode": "lastNode"
+      },
+      "name": "Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.tenantId}}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{$json.source}}",
+              "value2": "email",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.if",
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ai-service:8000/api/chat/reply",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tenantId",
+              "value": "={{$json.tenantId}}"
+            },
+            {
+              "name": "clientId",
+              "value": "={{$json.clientId}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.message}}"
+            },
+            {
+              "name": "platform",
+              "value": "email"
+            }
+          ]
+        }
+      },
+      "name": "Generate AI Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 250]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:4000/api/conversations/message",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "clientId",
+              "value": "={{$json.clientId}}"
+            },
+            {
+              "name": "platform",
+              "value": "email"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.reply}}"
+            },
+            {
+              "name": "autoReply",
+              "value": false
+            }
+          ]
+        }
+      },
+      "name": "Store Conversation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [850, 250]
+    }
+  ],
+  "connections": {
+    "Email Webhook": {
+      "main": [
+        [{ "node": "Validate Request", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [{ "node": "Generate AI Reply", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Generate AI Reply": {
+      "main": [
+        [{ "node": "Store Conversation", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
