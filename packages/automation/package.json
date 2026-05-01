@@ -1,0 +1,25 @@
+{
+  "name": "@freelancer-saas/automation",
+  "version": "1.0.0",
+  "description": "Browser Automation Workers for AI Freelancer SaaS",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0",
+    "bullmq": "^5.12.0",
+    "ioredis": "^5.4.1",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "tsx": "^4.19.0"
+  }
+}

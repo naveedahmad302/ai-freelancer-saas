@@ -1,0 +1,91 @@
+{
+  "name": "Meeting Scheduler Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "schedule-meeting",
+        "responseMode": "lastNode"
+      },
+      "name": "Schedule Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ai-service:8000/api/chat/reply",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tenantId",
+              "value": "={{$json.tenantId}}"
+            },
+            {
+              "name": "clientId",
+              "value": "={{$json.clientId}}"
+            },
+            {
+              "name": "message",
+              "value": "Detect if this message contains a meeting intent and extract date/time: {{$json.message}}"
+            },
+            {
+              "name": "platform",
+              "value": "={{$json.source}}"
+            }
+          ]
+        }
+      },
+      "name": "Detect Meeting Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:4000/api/meetings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "clientId",
+              "value": "={{$json.clientId}}"
+            },
+            {
+              "name": "title",
+              "value": "Meeting with {{$json.clientName}}"
+            },
+            {
+              "name": "platform",
+              "value": "google_meet"
+            },
+            {
+              "name": "scheduledAt",
+              "value": "={{$json.suggestedDateTime}}"
+            },
+            {
+              "name": "durationMinutes",
+              "value": 30
+            }
+          ]
+        }
+      },
+      "name": "Create Meeting",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Webhook": {
+      "main": [
+        [{ "node": "Detect Meeting Intent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Detect Meeting Intent": {
+      "main": [
+        [{ "node": "Create Meeting", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
